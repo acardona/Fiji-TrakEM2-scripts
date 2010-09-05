@@ -20,36 +20,42 @@
   ; m is the sorted map of number of synapses vs the vector of treelines that make that many synapses
   ; ve is the value of the entry of treeline id vs number of occurrences of that id in freq.
   ; n is the number of treelines that make ve synapses, so far.
-  (reduce
-    (fn [[sm m] e]
-      (let [ve (val e)
-            n (sm ve)]
-        (if n
-          [(assoc sm ve (inc n))
-           (assoc m ve (conj (m ve) (.getId (key e))))]
-          ; else, new entries
-          [(assoc sm ve 1)
-           (assoc m ve [(.getId (key e))])])))
-    [(sorted-map) (sorted-map)]
-    freq))
+  (let [distrib (reduce
+                  (fn [m [k v]]
+                    (let [n (m v)]
+                      (assoc m v (if n
+                                   (conj n (.getId k))
+                                   [(.getId k)]))))
+                  {}
+                  freq)]
+    [(reduce (fn [m [k v]]
+               (assoc m k (count v)))
+             (sorted-map)
+             distrib)
+     (sort distrib)]))
 
 (defn target-distribution
   "For a given treeline, find out the distribution of synapses onto target treelines.
   I.e. how many synapses each target receives."
   [tl-id layerset]
   (let [origin (.findById layerset tl-id)
-        outgoing (first (.findConnectors origin))]
+        outgoing (set (first (.findConnectors origin)))]
     (freq-distrib (frequencies (apply concat (map find-connector-targets outgoing))))))
 
 (defn find-connector-origins [connector]
   "Return the set of unique Treline origins of the connector. Should be just one."
+  ;(if (not (empty? (filter #(= (.getId %) 75408) (.getOrigins connector Treeline)))) (println "con: " (.getId connector)))
   (into #{} (treelines (.getOrigins connector Treeline))))
 
 (defn source-distribution
   "For a given treeline, find out the distribution of synaptic contacts from its upstream treelines."
   [tl-id layerset]
   (let [origin (.findById layerset tl-id)
-        incomming (second (.findConnectors origin))]
+        incomming (set (second (.findConnectors origin)))]
+    ; debug
+    ;(println (map (fn [[k v]] [(.getId k) "--" v]) (frequencies (apply concat (map find-connector-origins incomming)))))
+    ;(println (map find-connector-origins incomming))
+    ;
     (freq-distrib (frequencies (apply concat (map find-connector-origins incomming))))))
 
 ; Same as above:
@@ -63,6 +69,7 @@
       (apply concat)
       (frequencies)
       (freq-distrib)))
+; the above is like a sequence monad!
 
 (defn show [id]
   (let [p (ini.trakem2.ControlWindow/getActive)

@@ -5,10 +5,14 @@
   (:import [ini.trakem2 ControlWindow]
            [ini.trakem2.display Connector Treeline]))
 
+(defn- is-treeline [x] (= (class x) Treeline))
+
+(defn- treelines [col] (filter is-treeline col))
+
 (defn find-connector-targets
   "Return the set of unique Treeline targets of the connector."
   [connector]
-  (reduce #(into %1 %2) #{} (.getTargets connector Treeline)))
+  (treelines (reduce #(into %1 %2) #{} (.getTargets connector Treeline))))
 
 (defn- freq-distrib
   [freq]
@@ -34,21 +38,31 @@
   I.e. how many synapses each target receives."
   [tl-id layerset]
   (let [origin (.findById layerset tl-id)
-        targets (filter #(not (nil? (.getRoot %))) (.getZDisplayables layerset Treeline))
         outgoing (first (.findConnectors origin))]
     (freq-distrib (frequencies (apply concat (map find-connector-targets outgoing))))))
 
 (defn find-connector-origins [connector]
   "Return the set of unique Treline origins of the connector. Should be just one."
-  (into #{} (.getOrigins connector)))
+  (into #{} (treelines (.getOrigins connector Treeline))))
 
 (defn source-distribution
   "For a given treeline, find out the distribution of synaptic contacts from its upstream treelines."
   [tl-id layerset]
   (let [origin (.findById layerset tl-id)
-        sources (filter #(not (nil? (.getRoot %))) (.getZDisplayables layerset Treeline))
         incomming (second (.findConnectors origin))]
     (freq-distrib (frequencies (apply concat (map find-connector-origins incomming))))))
+
+; Same as above:
+(defn source-distribution-2
+  "For a given treeline, find out the distribution of synaptic contacts from its upstream treelines."
+  [tl-id layerset]
+    (->> (.findById layerset tl-id)
+      (.findConnectors)
+      (second)
+      (map find-connector-origins)
+      (apply concat)
+      (frequencies)
+      (freq-distrib)))
 
 (defn show [id]
   (let [p (ini.trakem2.ControlWindow/getActive)
@@ -73,14 +87,16 @@
 
 (let [layerset (.. ControlWindow getActive getRootLayerSet)]
   ;(println (target-distribution 71887 layerset))
-  ;(println (target-distribution 75408 layerset))
-  ;(println (source-distribution 87269 layerset))
-  (println (find-connectors (.findById layerset 75408) (.findById layerset 87269)))
+  (println (target-distribution 75408 layerset))
+  (println (source-distribution 87269 layerset))
+  ;(println (map (fn [col] (vec (map #(.getId %) col)))
+  ;              (find-connectors (.findById layerset 75408) (.findById layerset 87269))))
 )
 
   ; There is an error somewhere: one way reports 7, the other way reports 6.
-  ; find-connectors also reports 6, agreeing with source-distribution
+  ; find-connectors also reports 6, agreeing with target-distribution
   ; so perhaps target-distribution is wrong, but I can't see how it is wrong
+  ; which means I must find which are the 7 connections claimed by target-distribution
 
 
   

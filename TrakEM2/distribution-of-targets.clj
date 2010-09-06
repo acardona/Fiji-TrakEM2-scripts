@@ -3,7 +3,9 @@
 
 (ns my.targets
   (:import [ini.trakem2 ControlWindow]
-           [ini.trakem2.display Connector Treeline]))
+           [ini.trakem2.display Connector Display3D Treeline]
+           [javax.vecmath Color3f]
+           [java.awt Color]))
 
 (defn- is-treeline [x] (= (class x) Treeline))
 
@@ -44,7 +46,6 @@
 
 (defn find-connector-origins [connector]
   "Return the set of unique Treline origins of the connector. Should be just one."
-  ;(if (not (empty? (filter #(= (.getId %) 75408) (.getOrigins connector Treeline)))) (println "con: " (.getId connector)))
   (into #{} (treelines (.getOrigins connector Treeline))))
 
 (defn source-distribution
@@ -52,10 +53,6 @@
   [tl-id layerset]
   (let [origin (.findById layerset tl-id)
         incomming (set (second (.findConnectors origin)))]
-    ; debug
-    ;(println (map (fn [[k v]] [(.getId k) "--" v]) (frequencies (apply concat (map find-connector-origins incomming)))))
-    ;(println (map find-connector-origins incomming))
-    ;
     (freq-distrib (frequencies (apply concat (map find-connector-origins incomming))))))
 
 ; Same as above:
@@ -74,7 +71,25 @@
 (defn show [id]
   (let [p (ini.trakem2.ControlWindow/getActive)
         d (.findById (.getRootLayerSet p) id)]
-    (ini.trakem2.display.Display3D/show (.findProjectThing p d))))
+    (Display3D/show (.findProjectThing p d))))
+
+(defn show-in-color [ids color]
+  (let [p (ini.trakem2.ControlWindow/getActive)
+        layerset (.getRootLayerSet p)
+        ds (map #(.findById layerset %) ids)
+        d3d (Display3D/get layerset)
+        cs (map #(let [c (.call (.createMesh d3d (.findProjectThing p %) % 1))]
+                   (.setColor c (Color3f. color))
+                   c)
+                ds)]
+    (.addContent d3d cs)))
+
+(defn show-preferred
+  "Show in 3D the preferred treelines. selection is a set of the preferred to show."
+  [distrib selection color]
+  (doseq [[n tls] (filter #(contains? selection (key %)) distrib)]
+    (println (str "Showing: synapses=" n " ids: " tls))
+    (show-in-color tls color)))
 
 (defn find-connectors
   "From tl-a to tl-b, and from tl-b to tl-a."
@@ -91,19 +106,16 @@
     [(search outgoing find-connector-targets)
      (search incomming find-connector-origins)]))
 
-
 (let [layerset (.. ControlWindow getActive getRootLayerSet)]
-  ;(println (target-distribution 71887 layerset))
-  (println (target-distribution 75408 layerset))
-  (println (source-distribution 87269 layerset))
+  ;(println (target-distribution 71887 layerset)) ; lch5-1 left
+  ;(println (target-distribution 75408 layerset)) ; lch5-1 right
+  ;
+  ;(println (source-distribution 87269 layerset))
   ;(println (map (fn [col] (vec (map #(.getId %) col)))
   ;              (find-connectors (.findById layerset 75408) (.findById layerset 87269))))
+
+  ;(show-preferred (second (target-distribution 71887 layerset)) (set (range 5 15)) Color/yellow)
+  ;(show-preferred (second (target-distribution 75408 layerset)) (set (range 5 15)) Color/red)
+  (println (map (fn [col] (vec (map #(.getId %) col)))
+                (find-connectors (.findById layerset 71887) (.findById layerset 87269))))
 )
-
-  ; There is an error somewhere: one way reports 7, the other way reports 6.
-  ; find-connectors also reports 6, agreeing with target-distribution
-  ; so perhaps target-distribution is wrong, but I can't see how it is wrong
-  ; which means I must find which are the 7 connections claimed by target-distribution
-
-
-  

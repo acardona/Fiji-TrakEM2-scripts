@@ -5,11 +5,12 @@
 
 (ns my.first_order_network
   (:import [ini.trakem2.display Display Treeline]
-           [ij.text TextWindow]))
+           [ij.text TextWindow]
+           [ij IJ]))
 
 (defn find-connector-targets [connector]
   "Return the set of unique Treeline targets of the connector."
-  (reduce #(into %1 %2) #{} (.getTargets connector Treeline)))
+  (reduce #(into %1 %2) #{} (filter #(= (class %) Treeline) (.getTargets connector))))
 
 
 (defn first-order-network
@@ -53,6 +54,6 @@
 
 (if-let [front (Display/getFront)]
   (if-let [active (.getActive front)]
-    (first_order_network (.getId active))
+    (first-order-network (.getId active))
     (IJ/log "No object selected in the front display!"))
   (IJ/log "No displays are open!"))

@@ -4,7 +4,7 @@
 (ns my.connectors
   (:import [ini.trakem2.display Display Treeline Connector]))
 
-(let [cs (.. Display getFront getLayerSet (getZDisplayables Connector))]
+(let [cs (.. ini.trakem2.ControlWindow getActive getRootLayerSet (getZDisplayables Connector))]
   (println "Connectors: " (count cs))
   (let [post (reduce
                 (fn [m c]

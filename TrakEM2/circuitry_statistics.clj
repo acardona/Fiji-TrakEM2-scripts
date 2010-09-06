@@ -64,10 +64,10 @@
               (.. tl getRoot getSubtreeNodes)))))
 
 
-(let [layerset (.. Display getFront getLayerSet)
+(let [layerset (.. ini.trakem2.ControlWindow getActive getRootLayerSet)
        #^Calibration cal (.getCalibration layerset)
        cs (.getZDisplayables layerset Connector)
-       ts (.getZDisplayables layerset Treeline)]
+       ts (filter #(not (nil? (.getRoot %))) (.getZDisplayables layerset Treeline))]
   (println "Number of arbors:" (count ts))
   (println "Number of presynaptic sites:" (count cs))
   (println "Number of postsynaptic sites:" (reduce #(+ %1 (.getTargetCount %2)) 0 cs))

@@ -43,7 +43,6 @@
       (apply merge-with union
         (domonad sequence-m
           [tl sources
-           :when (not= nil (.getRoot tl))
            cso (first (.findConnectors tl))]
           {tl (intersection utargets (get-targets cso))}))))))
 
@@ -59,7 +58,6 @@
       (apply merge-with union
         (domonad sequence-m
           [tl targets
-          :when (not= nil (.getRoot tl))
            csi (second (.findConnectors tl))]
         {tl (intersection usources (get-origins csi))}))))))
 
@@ -68,7 +66,7 @@
       origins (find-arbors layerset "three")
       targets (find-arbors layerset "trees")]
   ;(println origins targets)
-  (println "convergent:" (find-divergent origins targets))
-  (println "divergent:" (find-convergent origins targets))
+  (println "divergent:" (find-divergent origins targets))
+  (println "convergent:" (find-convergent origins targets))
   )
   

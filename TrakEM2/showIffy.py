@@ -65,22 +65,12 @@ ls = proj.getRootLayerSet()
 
 neuToDisp = tl
 
-outCon = neuToDisp.findConnectors()[0]
-inCon = neuToDisp.findConnectors()[1]
-
 d3d = Display3D.get(ls)
 exe = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
 
 neuToDisp.setColor(Color.yellow)
 allOuts = []
 allOuts.append(exe.submit(d3d.createMesh(proj.findProjectThing(neuToDisp), neuToDisp, 1)))
-for con in inCon:
-	con.setColor(Color.green)
-	#allOuts.append(exe.submit(d3d.createMesh(proj.findProjectThing(con), con, 1)))
-
-for con in outCon:
-	con.setColor(Color.magenta)
-	#allOuts.append(exe.submit(d3d.createMesh(proj.findProjectThing(con), con, 1)))
 
 ii = 0
 for iffy in locs:

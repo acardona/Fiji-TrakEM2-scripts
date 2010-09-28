@@ -68,7 +68,6 @@ neuToDisp = tl
 d3d = Display3D.get(ls)
 exe = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
 
-neuToDisp.setColor(Color.yellow)
 allOuts = []
 allOuts.append(exe.submit(d3d.createMesh(proj.findProjectThing(neuToDisp), neuToDisp, 1)))
 

@@ -10,7 +10,7 @@
   (let [project (.getProject layerset)
         pattern (re-pattern s)]
     (domonad sequence-m
-      [arbor (.getZDisplayables layerset Arbor true)
+      [arbor (.getZDisplayables layerset Tree true)
        :when (re-find pattern (.getMeaningfulTitle project arbor))]
       arbor)))
 ; Test

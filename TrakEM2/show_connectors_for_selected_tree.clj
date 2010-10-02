@@ -101,15 +101,16 @@
 
 
 (defn get-mesh
+  "Returns a Tree.MeshData, with a list of Point3f vertices and a list of Color3f, one for each vertex."
   [displ scale]
   (cond
      (= Connector (class displ)) (.generateMesh displ scale 12)
-     (= Treeline (class displ))  (.generateTriangles displ scale 12 1)
+     (= Treeline (class displ))  (.generateSkeleton displ scale 12)
      (= AreaTree (class displ))  (.generateMesh displ scale 1)))
 
 (defn add-to-3d
   [univ displ color scale]
-  (let [content (.createContent univ (CustomTriangleMesh. (get-mesh displ scale)
+  (let [content (.createContent univ (CustomTriangleMesh. (.verts (get-mesh displ scale))
                                                           (Color3f. color) 0)
                                                           (str (.getTitle displ) " #" (.getId displ)))]
     (.setLocked content true)

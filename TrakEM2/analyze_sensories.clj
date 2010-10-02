@@ -1,7 +1,8 @@
 ; Albert Cardona 2010
 ; Find sensories and which sensory is connecting onto which other sensory
 (ns my.sensories
-  (:import [ini.trakem2.display Display Treeline]))
+  (:import [ini.trakem2.display Display Treeline])
+  (:use [clojure.set :only (intersection union)]))
 
 (defn find-nodes [pt type]
   (.findChildrenOfTypeR pt type))
@@ -15,10 +16,10 @@
    are part of the collection of potential targets.
    Returns an empty list if none, or the list of unique targets that are part of potential-targets."
   [t potential-targets]
-  (clojure.set/intersection
+  (intersection
     potential-targets
     (reduce
-      #(clojure.set/union %1 (find-connector-targets %2))
+      #(union %1 (find-connector-targets %2))
       #{}
       (first (.findConnectors t)))))
 

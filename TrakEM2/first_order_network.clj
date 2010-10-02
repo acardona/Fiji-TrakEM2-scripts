@@ -6,7 +6,8 @@
 (ns my.first_order_network
   (:import [ini.trakem2.display Display Treeline]
            [ij.text TextWindow]
-           [ij IJ]))
+           [ij IJ])
+  (:use [clojure.set :only (intersection)]))
 
 (defn find-connector-targets [connector]
   "Return the set of unique Treeline targets of the connector."
@@ -39,7 +40,7 @@
                 (println tl-id "pd" (.getId t)))))
           (doseq [c incomming]
             (let [origin (first (.getOrigins c Treeline)) ; there should only be one
-                  targets (clojure.set/intersection (find-connector-targets c) ts)]
+                  targets (intersection (find-connector-targets c) ts)]
               (if origin (.. System out (println (str "origin: " (.getId origin)))))
               (if targets (.. System out (println (str "targets: " (count targets)))))
               (if (and (not (nil? origin)) (not (nil? targets)))

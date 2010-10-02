@@ -3,7 +3,8 @@
 ; have targets onto any of the Displayable listed by id.
 
 (ns my.connectors
-  (:import [ini.trakem2.display Display Treeline]))
+  (:import [ini.trakem2.display Display Treeline])
+  (:use [clojure.set :only (intersection)]))
 
 (defn find-connector-targets [connector]
   "Return the set of unique Treeline targets of the connector."
@@ -26,7 +27,7 @@
   (let [outgoing (first (.findConnectors origin))
         distrib (reduce
                   (fn [m c]
-                    (let [n-inter (count (clojure.set/intersection (find-connector-targets c) targets))]
+                    (let [n-inter (count (intersection (find-connector-targets c) targets))]
                       (if-let [sum (m n-inter)]
                         (assoc m n-inter (inc sum))
                         (assoc m n-inter 1))))

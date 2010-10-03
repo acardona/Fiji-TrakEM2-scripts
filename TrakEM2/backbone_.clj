@@ -1,7 +1,8 @@
 (ns my.network
   (:import [ini.trakem2.display Display Tree Node]
            [java.awt Color]
-           [clojure.lang IPersistentVector]))
+           [clojure.lang IPersistentVector])
+  (:use [clojure.set :only (difference)]))
 
 (set! *warn-on-reflection* true)
 
@@ -46,13 +47,14 @@
                             nodeA
                             (.getParent ^Node (first topA))))]
         (into topA (reverse topB))))
-   
 
 (defn find-all-to-all-paths
   "Return a lazy sequence of vectors, each containing a possible path between two nodes in the tree."
-  [^Tree tree]
-  (let [nodes (into [] (.. tree getRoot getSubtreeNodes))
-        degrees (into {} (.computeAllDegrees tree))]
+  ([^Tree tree]
+    (find-all-to-all-paths
+      (into [] (.. tree getRoot getSubtreeNodes))
+      (into {} (.computeAllDegrees tree))))
+  ([nodes degrees]
     (for [i (range (count nodes))
           j (range (inc i) (count nodes))]
       (let [^Node nodeA (nodes i)
@@ -319,22 +321,24 @@
 
 (defn betweenness-centrality
   "Return a map of each node vs. its centrality."
-  [^Tree tree]
-  (apply merge-with +
-    (map #(zipmap % (repeat 1))
-      (find-all-to-all-paths tree))))
+  ([^Tree tree]
+    (betweenness-centrality (into [] (.. tree getRoot getSubtreeNodes))
+                            (into {} (.computeAllDegrees tree))))
+  ([nodes degrees]
+    (apply merge-with +
+      (map #(zipmap % (repeat 1))
+        (find-all-to-all-paths nodes degrees)))))
 
-(def get-color
-  (memoize
-    (fn [i highest]
-      (let [[r g b] (lut (int (* 255 (/ i highest))))]
-        (Color. (int r) (int g) (int b))))))
+(defn get-color [i highest]
+  (let [[r g b] (lut (int (* 255 (/ i highest))))]
+    (Color. (int r) (int g) (int b))))
 
 (defn colorize-centrality
   "Set a heat color to each node based on its centrality."
   [^Tree tree]
   (let [bc (betweenness-centrality tree)
-        highest (apply max (vals bc))]
+        highest (apply max (vals bc))
+        get-color (memoize get-color)]
     (println "highest:" highest)
     (doseq [^Node nd (keys bc)]
       (.setColor nd (get-color (get bc nd) highest)))))
@@ -352,9 +356,68 @@
           (colorize-centrality tree)
           (Display/repaint))))))
 
+;(time
+;  (run-colorize-centrality))
+
+; Now colorize not by centrality of node but by centrality of branch
+
+(def etching-multiplier (int 2))
+
+(defn branch-centrality
+  [^Tree tree]
+  (let [degrees (into {} (.computeAllDegrees tree))]
+   (binding [find-path (memoize find-path)] ; cached -- works, node pairs are always in the same order
+    (loop [nds (into {} (map
+                           (fn [^Node nd] [nd (set (.getChildrenNodes nd))])
+                           (.. tree getRoot getSubtreeNodes)))
+            branch-nodes (into {} (filter #(> (count (val %)) 1) nds))
+            step-vs-removed {} ; a map of step vs [remaining-branches, removed nodes] in that step
+            bc (betweenness-centrality (vec (keys nds)) degrees) ; a map of node vs centrality value
+            step (int 1)]
+      (println "nodes:" (count nds) "step:" step "branch-nodes:" (count branch-nodes))
+      (let [nodes-to-remove (reduce
+                              (fn [s [nd bcv]]
+                                (if (< bcv (* etching-multiplier (count nds)))
+                                  (conj s nd)
+                                  s))
+                                #{}
+                                bc)
+              remaining-branch-nodes (into {} (filter #(> (count (last %)) 1)
+                                                       (map (fn [[k v]] [k (difference v nodes-to-remove)])
+                                                            branch-nodes)))
+              step-vs-removed (assoc step-vs-removed step [(count remaining-branch-nodes) nodes-to-remove])
+              nds (apply dissoc nds nodes-to-remove)]
+          (if (== 0 (count nodes-to-remove))
+            ; Add the remaining nodes as the last step
+            step-vs-removed
+            ; Else
+            (recur nds
+                    remaining-branch-nodes
+                    step-vs-removed
+                    (betweenness-centrality (vec (keys nds)) degrees)
+                    (inc step))))))))
+
+(defn colorize-branch-centrality
+  [^Tree tree]
+  (let [svr (branch-centrality tree)
+        highest (apply max (keys svr))
+        get-color (memoize get-color)]
+    (doseq [[step [nb nds]] svr]
+      (println step nb ":" (count nds))
+      (doseq [^Node nd nds]
+        (.setColor nd (get-color step highest))))))
+
+(defn run-branch-centrality
+  []
+  (let [tree (first (.. Display getSelected))]
+    (if (nil? tree)
+      (println "No tree selected!")
+      (if (not (contains? (ancestors (class tree)) Tree))
+        (println "The selected object is not a Tree!")
+        (do
+          (colorize-branch-centrality tree)
+          (Display/repaint))))))
+
 (time
-  (run-colorize-centrality))
+  (run-branch-centrality))
 
-; Now colorize not by centrality but by branch
-
-(def etching-multiplier 2)

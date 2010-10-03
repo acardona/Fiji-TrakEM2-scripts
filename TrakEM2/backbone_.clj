@@ -30,8 +30,8 @@
    ^long degB]
    (let [topA (up-to-same-degree nodeA degA degB)
          topB (up-to-same-degree nodeB degB degA)
-         ^Node nodeA (if (empty? topA) nodeA (.getParent (last topA)))
-         ^Node nodeB (if (empty? topB) nodeB (.getParent (last topB)))
+         ^Node nodeA (if (empty? topA) nodeA (.getParent ^Node (last topA)))
+         ^Node nodeB (if (empty? topB) nodeB (.getParent ^Node (last topB)))
          [topA topB] (loop [^Node ndA nodeA
                              ^Node ndB nodeB
                              tpA topA
@@ -44,13 +44,13 @@
                                  (conj tpB ndB))))
           topA (conj topA (if (empty? topA)
                             nodeA
-                            (.getParent (first topA))))]
+                            (.getParent ^Node (first topA))))]
         (into topA (reverse topB))))
    
 
 (defn find-all-to-all-paths
   "Return a lazy sequence of vectors, each containing a possible path between two nodes in the tree."
-  [tree]
+  [^Tree tree]
   (let [nodes (into [] (.. tree getRoot getSubtreeNodes))
         degrees (into {} (.computeAllDegrees tree))]
     (for [i (range (count nodes))
@@ -319,7 +319,7 @@
 
 (defn betweenness-centrality
   "Return a map of each node vs. its centrality."
-  [tree]
+  [^Tree tree]
   (apply merge-with +
     (map #(zipmap % (repeat 1))
       (find-all-to-all-paths tree))))
@@ -328,11 +328,11 @@
   (memoize
     (fn [i highest]
       (let [[r g b] (lut (int (* 255 (/ i highest))))]
-        (Color. r g b)))))
+        (Color. (int r) (int g) (int b))))))
 
 (defn colorize-centrality
   "Set a heat color to each node based on its centrality."
-  [tree]
+  [^Tree tree]
   (let [bc (betweenness-centrality tree)
         highest (apply max (vals bc))]
     (println "highest:" highest)

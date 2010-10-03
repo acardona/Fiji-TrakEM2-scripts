@@ -366,7 +366,6 @@
 (defn branch-centrality
   [^Tree tree]
   (let [degrees (into {} (.computeAllDegrees tree))]
-   (binding [find-path (memoize find-path)] ; cached -- works, node pairs are always in the same order
     (loop [nds (into {} (map
                            (fn [^Node nd] [nd (set (.getChildrenNodes nd))])
                            (.. tree getRoot getSubtreeNodes)))
@@ -388,14 +387,13 @@
               step-vs-removed (assoc step-vs-removed step [(count remaining-branch-nodes) nodes-to-remove])
               nds (apply dissoc nds nodes-to-remove)]
           (if (== 0 (count nodes-to-remove))
-            ; Add the remaining nodes as the last step
             step-vs-removed
             ; Else
             (recur nds
                     remaining-branch-nodes
                     step-vs-removed
                     (betweenness-centrality (vec (keys nds)) degrees)
-                    (inc step))))))))
+                    (inc step)))))))
 
 (defn colorize-branch-centrality
   [^Tree tree]

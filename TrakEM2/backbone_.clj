@@ -325,9 +325,20 @@
     (betweenness-centrality (into [] (.. tree getRoot getSubtreeNodes))
                             (into {} (.computeAllDegrees tree))))
   ([nodes degrees]
-    (apply merge-with +
-      (map #(zipmap % (repeat 1))
-        (find-all-to-all-paths nodes degrees)))))
+    ;(apply merge-with +
+    ;  (map #(zipmap % (repeat 1))
+    ;    (find-all-to-all-paths nodes degrees)))))
+    ; Equivalent without being eager about realizing all subsequences at once
+    ; Reduce all path lists to a single map of Node vs centrality value
+    (reduce
+      ; Reduce all nodes in the path to incremented values in the map
+      ; Use anonymous function to lose the head of the sequence
+      #(reduce
+        (fn [m ^Node nd] (assoc m nd (inc (get m nd 0))))
+        %1 ; a map
+        %2) ; a vector of nodes
+      {}
+      (find-all-to-all-paths nodes degrees))))
 
 (defn get-color [i highest]
   (let [[r g b] (lut (int (* 255 (/ i highest))))]
@@ -385,8 +396,9 @@
                                                        (map (fn [[k v]] [k (difference v nodes-to-remove)])
                                                             branch-nodes)))
               step-vs-removed (assoc step-vs-removed step [(count remaining-branch-nodes) nodes-to-remove])
-              nds (apply dissoc nds nodes-to-remove)]
+              nds (reduce #(dissoc %1 %2) nds nodes-to-remove)]  ;(apply dissoc nds nodes-to-remove)
           (if (== 0 (count nodes-to-remove))
+            ; Add the remaining nodes as the last step
             step-vs-removed
             ; Else
             (recur nds

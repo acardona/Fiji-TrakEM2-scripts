@@ -1,6 +1,52 @@
 (ns my.network
   (:import [ini.trakem2.display Display Tree Node]
-           [java.awt Color]))
+           [java.awt Color]
+           [clojure.lang IPersistentVector]))
+
+(set! *warn-on-reflection* true)
+
+(defn ^:static up-to-same-degree
+  "Return the list of nodes from nd1 (included)
+  up its parent chain until reaching a node that has deg2 (not included)."
+  ^IPersistentVector
+  [^Node nd1
+   ^long deg1
+   ^long deg2]
+  (loop [node nd1
+          deg deg1
+          top []]
+    (if (<= deg deg2)
+      top
+      (recur (.getParent node)
+              (dec deg)
+              (conj top node)))))
+
+(defn ^:static find-path
+  "Return the list of nodes from nodeA to nodeB, both included."
+  ^IPersistentVector
+  [^Node nodeA
+   ^long degA
+   ^Node nodeB
+   ^long degB]
+   (let [topA (up-to-same-degree nodeA degA degB)
+         topB (up-to-same-degree nodeB degB degA)
+         ^Node nodeA (if (empty? topA) nodeA (.getParent (last topA)))
+         ^Node nodeB (if (empty? topB) nodeB (.getParent (last topB)))
+         [topA topB] (loop [^Node ndA nodeA
+                             ^Node ndB nodeB
+                             tpA topA
+                             tpB topB]
+                       (if (= ndA ndB)
+                         [tpA tpB]
+                         (recur (.getParent ndA)
+                                 (.getParent ndB)
+                                 (conj tpA ndA)
+                                 (conj tpB ndB))))
+          topA (conj topA (if (empty? topA)
+                            nodeA
+                            (.getParent (first topA))))]
+        (into topA (reverse topB))))
+   
 
 (defn find-all-to-all-paths
   "Return a lazy sequence of vectors, each containing a possible path between two nodes in the tree."
@@ -9,40 +55,9 @@
         degrees (into {} (.computeAllDegrees tree))]
     (for [i (range (count nodes))
           j (range (inc i) (count nodes))]
-      (let [up-to-same-degree (fn [^Node nd1 deg1 deg2]
-                                (loop [^Node node nd1
-                                       deg deg1
-                                       top []]
-                                  (if (<= deg deg2)
-                                    top
-                                    (recur (.getParent node)
-                                           (dec deg)
-                                           (conj top node)))))
-            ^Node nodeA (nodes i)
-            ^Node nodeB (nodes j)
-            degA (degrees nodeA)
-            degB (degrees nodeB)
-            ;_ (println nodeA degA nodeB degB (count nodes) (count degrees))
-            topA (up-to-same-degree nodeA degA degB)
-            topB (up-to-same-degree nodeB degB degA)
-            ;_ (println topA)
-            ;_ (println topB)
-            ^Node nodeA (if (empty? topA) nodeA (.getParent (last topA)))
-            ^Node nodeB (if (empty? topB) nodeB (.getParent (last topB)))
-            [topA topB] (loop [^Node ndA nodeA
-                               ^Node ndB nodeB
-                               tpA topA
-                               tpB topB]
-                          (if (= ndA ndB)
-                            [tpA tpB]
-                            (recur (.getParent ndA)
-                                   (.getParent ndB)
-                                   (conj tpA ndA)
-                                   (conj tpB ndB))))
-            topA (conj topA (if (empty? topA)
-                              nodeA
-                              (.getParent (first topA))))]
-        (into topA (reverse topB))))))
+      (let [^Node nodeA (nodes i)
+            ^Node nodeB (nodes j)]
+        (find-path nodeA (degrees nodeA) nodeB (degrees nodeB))))))
 
 (def lut
  [[67 0 185]
@@ -337,7 +352,9 @@
           (colorize-centrality tree)
           (Display/repaint))))))
 
-;(run-colorize-centrality)
+(time
+  (run-colorize-centrality))
+
+; Now colorize not by centrality but by branch
 
 (def etching-multiplier 2)
-

@@ -47,6 +47,8 @@ def run():
       report(nd, pols, tree.getAffineTransform(), cal)
       if remove_all_but_largest:
         removeAllButLargest(area, pols)
+    elif len(pols) == 1:
+      print "Found a single polygon with bounds: "+str(pols[0].getBounds())
   Display.repaint()
 
 run()

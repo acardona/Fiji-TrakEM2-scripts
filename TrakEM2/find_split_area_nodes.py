@@ -23,11 +23,9 @@ def removeAllButLargest(area, pols):
     s[bounds.width * bounds.height] = pol
   items = s.items()
   items.sort()
-  # Remove all but largest one
-  for k, v in items[:-1]:
-    area.subtract(Area(v))
-    print "Removed small area!"
-  
+  area.reset()
+  # Just add back the largest one:
+  area.add(Area(items[-1][1]))
 
 def run():
   if 0 == Display.getSelected().size():

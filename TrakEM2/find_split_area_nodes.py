@@ -17,11 +17,7 @@ def report(nd, pols, aff, cal):
     print "    width=", bounds.width * cal.pixelWidth, ", height=", bounds.height * cal.pixelHeight
 
 def removeAllButLargest(area, pols):
-  s = {}
-  for pol in pols:
-    bounds = pol.getBounds()
-    s[bounds.width * bounds.height] = pol
-  items = s.items()
+  items = [ ( x.getBounds().width * x.getBounds().height, x ) for x in pols ]
   items.sort()
   area.reset()
   # Just add back the largest one:

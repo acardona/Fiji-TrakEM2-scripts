@@ -3,6 +3,7 @@ from ini.trakem2.utils import M
 from jarray import array
 from java.awt.geom import Area
 
+remove_all_but_largest = False
 
 def report(nd, pols, aff, cal):
   f = array([nd.x, nd.y], 'f')
@@ -44,7 +45,8 @@ def run():
     pols = M.getPolygons(area)
     if len(pols) > 1:
       report(nd, pols, tree.getAffineTransform(), cal)
-      removeAllButLargest(area, pols)
+      if remove_all_but_largest:
+        removeAllButLargest(area, pols)
   Display.repaint()
 
 run()

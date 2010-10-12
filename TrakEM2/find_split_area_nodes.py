@@ -1,6 +1,7 @@
 from ini.trakem2.display import AreaTree, Display
 from ini.trakem2.utils import M
 from jarray import array
+from java.awt.geom import Area
 
 
 def report(nd, pols, aff):
@@ -11,6 +12,19 @@ def report(nd, pols, aff):
   for pol in pols:
     bounds = aff.createTransformedShape(pol).getBounds()
     print "    x=", bounds.x, ", y=", bounds.y
+
+def removeAllButLargest(area, pols):
+  s = {}
+  for pol in pols:
+    bounds = pol.getBounds()
+    s[bounds.width * bounds.height] = pol
+  items = s.items()
+  items.sort()
+  # Remove all but largest one
+  for k, v in items[:-1]:
+    area.subtract(Area(v))
+    print "Removed small area!"
+  
 
 def run():
   if 0 == Display.getSelected().size():
@@ -27,5 +41,8 @@ def run():
     pols = M.getPolygons(area)
     if len(pols) > 1:
       report(nd, pols, tree.getAffineTransform())
+      removeAllButLargest(area, pols)
+  Display.repaint()
+
 
 run()

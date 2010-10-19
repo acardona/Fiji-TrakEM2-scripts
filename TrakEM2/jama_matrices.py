@@ -9,7 +9,6 @@ from jarray import zeros, array
 # methods in Jama.Matrix, and also wrap the other Jama classes, namely:
 #
 #   CholeskyDecomposition
-#   EigenvalueDecomposition
 #   LUDecomposition
 #   QRDecomposition
 #   SingularValueDecomposition
@@ -20,6 +19,25 @@ from jarray import zeros, array
 #
 # Those methods that return basic types or void (e.g. det(), get(i,j),
 # set(i,j)) can be used directly (i.e. without a wrapping method).
+
+class EigenvalueDecomposition(object):
+
+    def __init__( self, ed ):
+        self.ed = ed
+
+    def getRealEigenvalues( self ):
+        return list( self.ed.getRealEigenvalues() )
+
+    def getImagEigenvalues( self ):
+        return list( self.ed.getRealEigenvalues() )
+
+    def getV( self ):
+        '''Return the eigenvector matrix'''
+        return Matrix(self.ed.getV())
+
+    def getD( self ):
+        '''Return the block diagonal eigenvalue matrix'''
+        return Matrix(self.ed.getD())
 
 class Matrix(Jama.Matrix):
 
@@ -68,6 +86,9 @@ class Matrix(Jama.Matrix):
     def __sub__( self, other ):
         return Matrix( self.minus( other ) )
 
+    def eig( self ):
+        return EigenvalueDecomposition(Jama.Matrix.eig(self))
+
 m = Matrix( [ [1, 2, 3], [4, 5, 6], [ 7, 8, 10 ] ] )
 print "m is:", m
 
@@ -94,3 +115,6 @@ ed = m.eig()
 
 evalues = ed.getRealEigenvalues()
 print "got evalues: ", evalues
+
+evectors = ed.getV()
+print "the eigenvalue matrix is:", evectors

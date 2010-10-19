@@ -65,6 +65,9 @@ class Matrix(Jama.Matrix):
     def __add__( self, other ):
         return Matrix( self.plus( other ) )
 
+    def __sub__( self, other ):
+        return Matrix( self.minus( other ) )
+
 m = Matrix( [ [1, 2, 3], [4, 5, 6], [ 7, 8, 10 ] ] )
 print "m is:", m
 

@@ -6,10 +6,12 @@
 
 from ini.trakem2 import Project
 from ini.trakem2.display import Tree, Treeline, AreaTree, Connector
+from ini.trakem2.parallel import Process, TaskFactory
 from java.lang import StringBuilder
 from java.io import File
 from ij import IJ
 from ij.gui import YesNoCancelDialog
+from java.util.concurrent.atomic import AtomicInteger
 
 def asSWC(tree):
   """ Return a String with the treeline in SWC format.
@@ -107,13 +109,18 @@ def toFiles(tree, targetFolder):
   if save(targetFolder + title + ".swc", asSWC(tree)):
     save(targetFolder + title + ".js", asJSON(tree))
 
+class TF(TaskFactory):
+  def __init__(self, targetFolder, ai, total):
+    self.targetFolder = targetFolder
+    self.ai = ai
+    self.total = total
+  def process(self, tree):
+    toFiles(tree, self.targetFolder)
+    IJ.showProgress(self.ai.incrementAndGet(), self.total)
+
 def process(trees, targetFolder):
-  i = 0
-  for tree in trees:
-    IJ.showProgress(i, len(trees))
-    toFiles(tree, targetFolder)
-    i += 1
-  IJ.showProgress(1)
+  """ Process, in parallel, all trees. """
+  Process.unbound(trees, TF(targetFolder, AtomicInteger(0), len(trees)))
 
 def run():
   projects = Project.getProjects()
@@ -126,7 +133,6 @@ def run():
   if trees.isEmpty():
     IJ.log('No trees to process!')
     return
-  #targetFolder = '/home/albert/Desktop/t2/SWC/'
   dc = DirectoryChooser('Target folder')
   targetFolder = dc.getDirectory()
   if targetFolder is None:

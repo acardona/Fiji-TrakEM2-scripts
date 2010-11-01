@@ -15,7 +15,7 @@ def export(profile):
   ph = float(cal.pixelHeight)
   svg = StringBuilder()
   svg.append('<path id="').append(profile.id).append('" d="M')
-  for i in range(0, len(p) - 1):
+  for i in range(0, len(p[0]) - 1):
     svg.append(' ').append(p[0][i] * pw).append(',').append(p[1][i] * ph)
     svg.append(' C ').append(pr[0][i] * pw).append(',').append(pr[1][i] * ph)
     svg.append(' ').append(pl[0][i+1] * pw).append(',').append(pl[1][i] * ph)

@@ -5,7 +5,7 @@
 # to other Treeline or AreaTree.
 
 from ini.trakem2 import Project
-from ini.trakem2.display import Tree, Treeline, AreaTree
+from ini.trakem2.display import Tree, Treeline, AreaTree, Connector
 from java.lang import StringBuilder
 from java.io import File
 from ij import IJ
@@ -47,6 +47,8 @@ def findConnections(tree):
   for c in outgoing:
     for targetSet in c.getTargets(Tree):
       for target in targetSet:
+        if isinstance(target, Connector):
+          continue
         if tableOut.has_key(target):
           tableOut[target] += 1
         else:
@@ -54,6 +56,8 @@ def findConnections(tree):
   tableIn = {}
   for c in incomming:
     for origin in c.getOrigins(Tree):
+      if isinstance(origin, Connector):
+        continue
       if tableIn.has_key(origin):
         tableIn[origin] += 1
       else:

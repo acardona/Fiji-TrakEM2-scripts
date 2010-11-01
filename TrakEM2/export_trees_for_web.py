@@ -61,7 +61,16 @@ def findConnections(tree):
   return tableOut, tableIn
 
 def getTitle(tree):
-  return tree.project.getMeaningfulTitle2(tree)
+  return tree.project.getMeaningfulTitle2(tree) + " #" + str(tree.id)
+
+def sortMapByValue(m, reverse):
+  """ Returns an iterable list of [key,value] pairs, sorted by value. """
+  v = [[v, k] for k,v in m.items()]
+  v.sort()
+  if reverse:
+    v.reverse()
+  return [[k, v] for v,k in v]
+  
 
 def asJSON(tree):
   """ Return a String with a JSON map containing the name, id, and list of connections. """
@@ -70,13 +79,13 @@ def asJSON(tree):
   json.append(' "name" : "').append(getTitle(tree)).append('",\n')  
   tableOut, tableIn = findConnections(tree)
   json.append(' "outgoing" : [')
-  for target, num in tableOut.iteritems():
+  for target, num in sortMapByValue(tableOut, True):
     json.append(' ["').append(getTitle(target)).append('", ').append(num).append('],\n')
   if len(tableOut) > 0:
     json.setLength(json.length()-2)
   json.append('],\n')
   json.append(' "incomming" : [')
-  for origin, num in tableIn.iteritems():
+  for origin, num in sortMapByValue(tableIn, True):
     json.append(' ["').append(getTitle(origin)).append('", ').append(num).append('],\n')
   json.append(']}\n')
   return json.toString()
@@ -109,7 +118,7 @@ def run():
     return
   ls = projects.get(0).getRootLayerSet()
   trees = ls.getZDisplayables(Treeline)
-  trees.addAll(ls.getZDisplayables(AreaTree)
+  trees.addAll(ls.getZDisplayables(AreaTree))
   if trees.isEmpty():
     IJ.log('No trees to process!')
     return

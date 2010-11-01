@@ -90,7 +90,7 @@ def asJSON(tree):
   if len(tableOut) > 0:
     json.setLength(json.length()-2)
   json.append('],\n')
-  json.append(' "incomming" : [')
+  json.append(' "incoming" : [')
   for origin, num in sortMapByValue(tableIn, True):
     json.append(' ["').append(getTitle(origin)).append('", ').append(num).append('],\n')
   json.append(']}\n')

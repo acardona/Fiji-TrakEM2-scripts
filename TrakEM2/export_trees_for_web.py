@@ -67,7 +67,8 @@ def findConnections(tree):
   return tableOut, tableIn
 
 def getTitle(tree):
-  return tree.project.getMeaningfulTitle2(tree) + " #" + str(tree.id)
+  return tree.project.getMeaningfulTitle2(tree).replace('/','--') + " #" + str(tree.id)
+  
 
 def sortMapByValue(m, reverse):
   """ Returns an iterable list of [key,value] pairs, sorted by value. """

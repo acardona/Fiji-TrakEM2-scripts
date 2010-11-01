@@ -3,6 +3,7 @@ from ini.trakem2.utils import M
 from jarray import array
 from java.awt.geom import Area
 
+remove_all_but_largest = False
 
 def report(nd, pols, aff, cal):
   f = array([nd.x, nd.y], 'f')
@@ -16,17 +17,11 @@ def report(nd, pols, aff, cal):
     print "    width=", bounds.width * cal.pixelWidth, ", height=", bounds.height * cal.pixelHeight
 
 def removeAllButLargest(area, pols):
-  s = {}
-  for pol in pols:
-    bounds = pol.getBounds()
-    s[bounds.width * bounds.height] = pol
-  items = s.items()
+  items = [ ( x.getBounds().width * x.getBounds().height, x ) for x in pols ]
   items.sort()
-  # Remove all but largest one
-  for k, v in items[:-1]:
-    area.subtract(Area(v))
-    print "Removed small area!"
-  
+  area.reset()
+  # Just add back the largest one:
+  area.add(Area(items[-1][1]))
 
 def run():
   if 0 == Display.getSelected().size():
@@ -44,7 +39,10 @@ def run():
     pols = M.getPolygons(area)
     if len(pols) > 1:
       report(nd, pols, tree.getAffineTransform(), cal)
-      removeAllButLargest(area, pols)
+      if remove_all_but_largest:
+        removeAllButLargest(area, pols)
+    elif len(pols) == 1:
+      print "Found a single polygon with bounds: "+str(pols[0].getBounds())
   Display.repaint()
 
 run()

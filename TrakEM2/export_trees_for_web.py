@@ -12,6 +12,7 @@ from java.io import File
 from ij import IJ
 from ij.gui import YesNoCancelDialog
 from java.util.concurrent.atomic import AtomicInteger
+from jarray import array
 
 def asSWC(tree):
   """ Return a String with the treeline in SWC format.
@@ -22,6 +23,7 @@ def asSWC(tree):
   cal = tree.getLayerSet().getCalibrationCopy()
   pw = float(cal.pixelWidth)
   ph = float(cal.pixelHeight)
+  aff = tree.getAffineTransform()
   swc = StringBuilder()
   table = {}
   nodeID = 1
@@ -29,8 +31,10 @@ def asSWC(tree):
     table[nd] = nodeID
     swc.append(nodeID).append(' ')
     swc.append('0').append(' ')
-    swc.append(nd.x * pw).append(' ')
-    swc.append(nd.y * ph).append(' ')
+    fp = array([nd.x, nd.y], 'f')
+    aff.transform(fp, 0, fp, 0, 1)
+    swc.append(fp[0] * pw).append(' ')
+    swc.append(fp[1] * ph).append(' ')
     swc.append(float(nd.layer.z) * pw).append(' ')
     swc.append(float(0)).append(' ')
     if nd.parent is None:

@@ -67,7 +67,7 @@ def findConnections(tree):
       if tableIn.has_key(origin):
         tableIn[origin] += 1
       else:
-        tableOut[origin] = 1
+        tableIn[origin] = 1
   return tableOut, tableIn
 
 def getTitle(tree):

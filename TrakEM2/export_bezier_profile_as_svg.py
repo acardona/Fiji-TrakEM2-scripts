@@ -4,9 +4,11 @@
 from java.lang import StringBuilder
 from ij.gui import GUI
 from ij.text import TextWindow
+from ini.trakem2.display import Display, Profile
 
 def export(profile):
   pl, p, pr = profile.getBezierArrays()
+  n_points = len(p[0])
   pl = profile.transformPoints(pl)
   p = profile.transformPoints(p)
   pr = profile.transformPoints(pr)
@@ -15,13 +17,13 @@ def export(profile):
   ph = float(cal.pixelHeight)
   svg = StringBuilder()
   svg.append('<path id="').append(profile.id).append('" d="M')
-  for i in range(0, len(p[0]) - 1):
+  for i in range(0, n_points - 1):
     svg.append(' ').append(p[0][i] * pw).append(',').append(p[1][i] * ph)
     svg.append(' C ').append(pr[0][i] * pw).append(',').append(pr[1][i] * ph)
-    svg.append(' ').append(pl[0][i+1] * pw).append(',').append(pl[1][i] * ph)
-  svg.append(' ').append(p[0][len(p) -1] * pw).append(',').append(p[1][len(p) -1] * ph)
+    svg.append(' ').append(pl[0][i+1] * pw).append(',').append(pl[1][i+1] * ph)
+  svg.append(' ').append(p[0][n_points -1] * pw).append(',').append(p[1][n_points -1] * ph)
   if profile.isClosed():
-    svg.append(' C ').append(pr[0][len(p) -1] * pw).append(',').append(pr[1][len(p) -1] * ph)
+    svg.append(' C ').append(pr[0][n_points -1] * pw).append(',').append(pr[1][n_points -1] * ph)
     svg.append(' ').append(pl[0][0] * pw).append(',').append(pl[1][0] * ph)
     svg.append(' ').append(p[0][0] * pw).append(',').append(p[1][0] * ph)
     svg.append(' z')

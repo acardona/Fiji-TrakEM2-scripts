@@ -1,7 +1,8 @@
 import random
 
-# A simple example showing how to draw histograms using
-# JFreeChart from Jython
+# A simple example showing how to draw histograms using JFreeChart
+# from Jython.  This is based heavily on the pure Java example found
+# here: http://www.roseindia.net/tutorial/java/jfreechart/createhistogram.html
 
 from org.jfree.data.statistics import HistogramDataset
 from org.jfree.data.statistics import HistogramType

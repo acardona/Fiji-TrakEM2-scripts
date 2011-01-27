@@ -9,12 +9,22 @@
 #  - The profiles seem to be invisible.  If I click on one in the
 #    Profiles tab of a display, it will appear, but disappears as soon
 #    as it is deselected.
+# --> generateBezierInterpolates(0.05) was not called, and can't be called: protected
 #
 #  - The linking doesn't seem to work (the lock icon isn't shown for
 #    any of the created profiles)
+# --> linking means: linked to one or more Patch instances.
+#      getLinkedGroup(None) will report a large size after calling profile.link(profiles[i-1]) many times.
+#      The icon will not change when linking profiles to other profiles.
+#      Despite all that, linking is needed for adjacent Profiles.
+#      To be fair, Profile should not exist. It should be a ProfileList extends ZDisplayable,
+#      with an interal list of profiles. The links merely reflect the order in that list,
+#      creating a de-factor doubly-linked list.
 #
 #  - ConcurrentModification exceptions - I'm not sure how to
 #    synchronize access to the TrakEM2 classes from Jython.
+# --> this has to do with the repaints of the UI in JTree. It's a harmless error that has
+#     been around ever since DNDTree was created.
 
 from java.awt.geom import Point2D
 from jarray import array
@@ -52,32 +62,33 @@ def add_profile_list_cube( project, grid_pt, profile_list_tt, x, y, z, side ):
     square_corners = ( (-1,1), (1,1), (1,-1), (-1,-1) )
     corners = map( lambda t: (t[0]*hsu,t[1]*hsu), square_corners )
 
-    all_points = []
+    plx = []
+    ply = []
+    px = []
+    py = []
+    prx = []
+    pry = []
 
     for i,c in enumerate(corners):
         next_point = corners[(i+1)%4]
-        all_points.append( Point2D.Double(c[0],c[1]) )
-        x_to_next = next_point[0] - c[0]
-        y_to_next = next_point[1] - c[1]
-        control_1_x = x_to_next * 0.25 + c[0]
-        control_1_y = y_to_next * 0.25 + c[1]
-        all_points.append( Point2D.Double(control_1_x,control_1_y) )
-        control_2_x = x_to_next * 0.75 + c[0]
-        control_2_y = y_to_next * 0.75 + c[1]
-        all_points.append( Point2D.Double(control_2_x,control_2_y) )
-
-    # And we have to add the first point again to end the "curve":
-    all_points.append(all_points[0])
+        px.append(c[0])
+        py.append(c[1])
+        plx.append(c[0])
+        ply.append(c[1])
+        prx.append(c[0])
+        pry.append(c[1])
 
     profiles = []
+    D2 = Class.forName("[D")  # a double[]
 
     layers = ls.getLayers(minimum_layer,maximum_layer)
     print "Got layers:", layers
     for l in layers:
         print "Adding to layer:", l
-        java_array = array(all_points,Point2D.Double)
-        profile = Profile( project, "square profile", x/pw, y/ph, java_array)
-        profile.setAlpha(0.0)
+        profile = Profile( project, "square profile", x/pw, y/ph)
+        profile.setPoints(array([plx, ply], D2), array([px, py], D2), array([prx, pry], D2), False)
+        profile.setAlpha(1.0) # alpha of 1.0 means full opacity
+        profile.toggleClosed() # defaults to open
         profiles.append(profile)
         l.add(profile)
 
@@ -108,6 +119,9 @@ def run():
     unique_types = project.getUniqueTypes()
     if "grid" not in unique_types:
         raise Exception, "There must be a 'grid' type in the template (left pane)"
+    grid_tt = project.getTemplateThing("grid")
+    if not grid_tt.canHaveAsChild(project.getTemplateThing("profile_list")):
+        raise Exception, "The 'grid' must have a 'profile list' as child in the template (left pane)"
 
     # Find the grid in the project hierarchy - the user should
     # add it manually before running this script:

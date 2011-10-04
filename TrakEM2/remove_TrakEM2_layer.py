@@ -126,7 +126,8 @@ def run():
     if cRoot is None:
       continue # empty Connector
     if cRoot.getLayer() == layerToRemove:
-      transferConnectorNode(c, cRoot, list(c.getOrigins()), layerToRemove, supportLayer)
+			origins = list(c.getOrigins(Treeline)) + list(c.getOrigins(AreaTree))
+      transferConnectorNode(c, cRoot, origins, layerToRemove, supportLayer)
     # 2. See if the targets of the connector have to be transferred
     for nd in cRoot.getChildrenNodes():
       if nd.getLayer() == layerToRemove:

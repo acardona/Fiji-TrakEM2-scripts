@@ -2,10 +2,12 @@
 # Draw a ROI on a canvas, choose the layer range,
 # then invoke the Simple Neurite Tracer on the virtual stack.
 # (TrakEM2 does all the plumbing.)
-# 
-# MISSING: recovering the data from the SNT and adding it
-# back to TrakEM2 as a AreaTree or Treeline.
 
+import tempfile
+import os
+import re
+import shutil
+from tracing import Simple_Neurite_Tracer, SNTListener
 
 # Get the open display
 front = Display.getFront()
@@ -15,11 +17,57 @@ import sys
 from java.awt.event import ActionListener
 from javax.swing import JPanel, JButton
 
-class Launcher(Runnable):
-  def __init__(self, imp):
+class Launcher(Runnable,SNTListener):
+
+  def __init__(self, imp, roi, layers):
     self.imp = imp
+    self.roi = roi
+    self.layers = layers
+
   def run(self):
-    IJ.run(self.imp, "Simple Neurite Tracer", "")
+    self.plugin = Simple_Neurite_Tracer()
+    self.plugin.addListener(self)
+    self.plugin.run("")
+
+  def onEvent(self, event):
+    global front
+    d = tempfile.mkdtemp()
+    pafm = self.plugin.getPathAndFillManager()
+    output_prefix = os.path.join(d,'snt-export')
+    if not pafm.exportAllAsSWC(output_prefix):
+      IJ.error('Exporting SNT paths as SWC files to "%s" failed' % (output_prefix,))
+      return
+    tlines = []
+    for e in os.listdir(d):
+      filename = os.path.join(d, e)
+      tl = Treeline(front.project, filename)
+      cal = self.imp.getCalibration().copy()
+      lset = front.getLayerSet()
+      nodes = {}
+      offset = self.roi.getBounds()
+      fp = open(filename)
+      for line in fp:
+        line = re.sub('\s*#.*$', '', line)
+        line = line.strip()
+        if not line:
+          continue
+        point_id, point_type, x, y, z, radius, parent_id = re.split('\s+', line)
+        node = tl.newNode(offset.x + float(x) / cal.pixelWidth,
+                          offset.y + float(y) / cal.pixelHeight,
+                          self.layers[int(float(z) / cal.pixelDepth + 0.5)],
+                          None)
+        nodes[int(point_id)] = node
+        pid = int(parent_id)
+        parent = nodes.get(pid, None)
+        if parent:
+          parent.add(node, 5)
+        elif -1 == pid:
+          tl.setRoot(node)
+      tl.calculateBoundingBox(None)
+      tlines.append(tl)
+    lset.addAll(tlines)
+    front.project.getProjectTree().insertSegmentations(tlines)
+    shutil.rmtree(d)
 
 def initSNTInterfacing(roi, firstLayerIndex, lastLayerIndex):
   IJ.log(str(roi) + " " + str(firstLayerIndex) + " " + str(lastLayerIndex))
@@ -28,7 +76,7 @@ def initSNTInterfacing(roi, firstLayerIndex, lastLayerIndex):
   imp = ImagePlus("TrakEM2 substack", stack)
   imp.setCalibration(front.getLayerSet().getCalibrationCopy())
   imp.show()
-  t = Thread(Launcher(imp))
+  t = Thread(Launcher(imp, roi, layers))
   t.setPriority(Thread.NORM_PRIORITY)
   t.start()
 

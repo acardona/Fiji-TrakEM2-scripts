@@ -7,7 +7,7 @@ import tempfile
 import os
 import re
 import shutil
-from tracing import Simple_Neurite_Tracer, SNTListener
+from tracing import Simple_Neurite_Tracer, SNTListener, SNTEvent
 
 # Get the open display
 front = Display.getFront()
@@ -31,6 +31,8 @@ class Launcher(Runnable,SNTListener):
 
   def onEvent(self, event):
     global front
+    if event.getType() != SNTEvent.SEND_TO_TRAKEM2:
+      return
     d = tempfile.mkdtemp()
     pafm = self.plugin.getPathAndFillManager()
     output_prefix = os.path.join(d,'snt-export')

@@ -2,6 +2,9 @@
 # Draw a ROI on a canvas, choose the layer range,
 # then invoke the Simple Neurite Tracer on the virtual stack.
 # (TrakEM2 does all the plumbing.)
+#
+# Mark Longair added the interaction with the Simple Neurite Tracer,
+# and the retrieval of the arbors as SWC into TrakEM2.
 
 import tempfile
 import os
@@ -40,14 +43,15 @@ class Launcher(Runnable,SNTListener):
       IJ.error('Exporting SNT paths as SWC files to "%s" failed' % (output_prefix,))
       return
     tlines = []
+    cal = self.imp.getCalibration().copy()
+    lset = front.getLayerSet()
     for e in os.listdir(d):
       filename = os.path.join(d, e)
       tl = Treeline(front.project, filename)
-      cal = self.imp.getCalibration().copy()
-      lset = front.getLayerSet()
       nodes = {}
       offset = self.roi.getBounds()
       fp = open(filename)
+      root = None
       for line in fp:
         line = re.sub('\s*#.*$', '', line)
         line = line.strip()
@@ -64,9 +68,11 @@ class Launcher(Runnable,SNTListener):
         if parent:
           parent.add(node, 5)
         elif -1 == pid:
-          tl.setRoot(node)
-      tl.calculateBoundingBox(None)
-      tlines.append(tl)
+          root = node
+      if root:
+        tl.setRoot(root) # caches all subtree nodes in the Treeline
+        tl.calculateBoundingBox(None)
+        tlines.append(tl)
     lset.addAll(tlines)
     front.project.getProjectTree().insertSegmentations(tlines)
     shutil.rmtree(d)
@@ -100,9 +106,6 @@ class Listener(ActionListener):
     except:
       IJ.log(str(sys.exc_info()))
 
-def runSNT(ev):
-  IJ.log("hello")
-
 def removeSNTPanel(ev):
   for i in xrange(tabbedPane.getTabCount()):
     if tabbedPane.getTitleAt(i) == "SNT":
@@ -112,7 +115,6 @@ def removeSNTPanel(ev):
 def createSNTPanel():
   # Create out control panel
   panel = JPanel()
-  #button = JButton("Run SNT", actionPerformed=runSNT)
   button = JButton("Run SNT")
   panel.add(button)
   panel.add(JButton("Remove panel", actionPerformed=removeSNTPanel))

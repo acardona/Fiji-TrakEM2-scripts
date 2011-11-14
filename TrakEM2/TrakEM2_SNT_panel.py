@@ -38,6 +38,8 @@ class Launcher(Runnable,SNTListener):
       return
     d = tempfile.mkdtemp()
     pafm = self.plugin.getPathAndFillManager()
+    pixel_width = self.imp.getCalibration().pixelWidth
+    pafm.downsampleAll(pixel_width)
     output_prefix = os.path.join(d,'snt-export')
     if not pafm.exportAllAsSWC(output_prefix):
       IJ.error('Exporting SNT paths as SWC files to "%s" failed' % (output_prefix,))

@@ -106,6 +106,8 @@
       (let [s (nth series i)]
         (.setSeriesStroke renderer (int i)
                           (BasicStroke. (float (or (:stroke s) 1)) 1 1))
+        (.setSeriesPaint renderer (int i)
+                         (apply #(Color. %1 %2 %3 %4) (or (:stroke-color s) [255 0 0 255])))
         (.setSeriesFillPaint renderer (int i)
                              (apply #(Color. %1 %2 %3 %4) (or (:color s) [255 0 0 255])))))
     (doto (.getRangeAxis plot)
@@ -171,11 +173,11 @@
       (.addStringField "Background color" (retrieve :background "[255 255 255]") 11)
       (.addMessage "Series (one per row):")
       (.addTextAreas (retrieve :series (str
-                       "{:x 0 :y 1 :r 4 :title \"First\" :color [255 0 0 128] :stroke 1.0}\n"
-                       "{:x 7 :y 8 :r 11 :title \"Second\" :color [0 0 255 128] :stroke 1.0}\n"
-                       "{:x 14 :y 15 :r 18 :title \"Third\" :color [0 200 0 128] :stroke 1.0}"))
+                       "{:x 0 :y 1 :r 4 :title \"First\" :color [255 0 0 128] :stroke 1.0 :stroke-color [255 0 0 128]}\n"
+                       "{:x 7 :y 8 :r 11 :title \"Second\" :color [0 0 255 128] :stroke 1.0 :stroke-color [0 0 255 128]}\n"
+                       "{:x 14 :y 15 :r 18 :title \"Third\" :color [0 200 0 128] :stroke 1.0 :stroke-color [0 200 0 128]}"))
                      nil
-                     5 80)
+                     5 90)
       (.showDialog))
     (when-not (.wasCanceled gd)
       (plot (store :filename (.getNextString gd))

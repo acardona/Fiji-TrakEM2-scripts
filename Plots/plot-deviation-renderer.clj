@@ -8,13 +8,15 @@
   (:import [java.io BufferedReader InputStreamReader FileInputStream]
            [java.awt Color Dimension BasicStroke]
            [javax.swing JFrame]
+           [java.awt.event ActionListener]
            [org.jfree.chart ChartFactory ChartPanel]
            [org.jfree.chart.axis NumberAxis]
            [org.jfree.chart.plot XYPlot PlotOrientation]
            [org.jfree.chart.renderer.xy DeviationRenderer]
            [org.jfree.data.xy XYDataset YIntervalSeries YIntervalSeriesCollection]
            [org.jfree.ui RectangleInsets]
-           [fiji.util.gui GenericDialogPlus]))
+           [fiji.util.gui GenericDialogPlus]
+           [ij Prefs]))
 
 (defmacro read-lines
   [filename f]
@@ -140,33 +142,49 @@
                {:x 14 :y 15 :r 18 :title "Third" :color [0 200 0 128] :stroke 1.0}])
 )
 
+(defn ^String make-key
+  [k]
+  (str "act.plot.deviation." (.substring (str k) 1)))
+
+(defn ^String retrieve
+  [k
+   ^String default-value]
+  (Prefs/get (make-key k)
+             default-value))
+
+(defn ^String store
+  [k
+   ^String value]
+  (Prefs/set (make-key k) (str value))
+  value)
+
 (defn choose
   []
   (let [^GenericDialogPlus gd (GenericDialogPlus. "Plot CSV")]
     (doto gd
-      (.addFileField "Choose *.csv file" "/home/albert/lab/Marta/crabspeed_data.csv" 50)
-      (.addSlider "Skip lines" 1 20 2)
-      (.addStringField "Separation" ",")
-      (.addStringField "Title" "Plot" 50)
-      (.addStringField "X-axis label" "X-axis" 50)
-      (.addStringField "Y-axis label" "Y-axis" 50)
-      (.addStringField "Background color" "[255 255 255]" 11)
+      (.addFileField "Choose *.csv file" (retrieve :filename "/home/albert/lab/Marta/crabspeed_data.csv") 50)
+      (.addSlider "Skip lines" 1 20 (int (eval (read-string (retrieve :skip "2")))))
+      (.addStringField "Separation" (retrieve :separation ","))
+      (.addStringField "Title" (retrieve :title "Plot") 50)
+      (.addStringField "X-axis label" (retrieve :x-label "X-axis") 50)
+      (.addStringField "Y-axis label" (retrieve :y-label "Y-axis") 50)
+      (.addStringField "Background color" (retrieve :background "[255 255 255]") 11)
       (.addMessage "Series (one per row):")
-      (.addTextAreas (str
+      (.addTextAreas (retrieve :series (str
                        "{:x 0 :y 1 :r 4 :title \"First\" :color [255 0 0 128] :stroke 1.0}\n"
                        "{:x 7 :y 8 :r 11 :title \"Second\" :color [0 0 255 128] :stroke 1.0}\n"
-                       "{:x 14 :y 15 :r 18 :title \"Third\" :color [0 200 0 128] :stroke 1.0}")
+                       "{:x 14 :y 15 :r 18 :title \"Third\" :color [0 200 0 128] :stroke 1.0}"))
                      nil
                      5 80)
       (.showDialog))
     (when-not (.wasCanceled gd)
-      (plot (.getNextString gd)
-            :skip (int (.getNextNumber gd))
-            :separation (.getNextString gd)
-            :title (.getNextString gd)
-            :x-label (.getNextString gd)
-            :y-label (.getNextString gd)
-            :background (eval (read-string (.getNextString gd)))
-            :series (eval (read-string (str \[ (.getText (.getTextArea1 gd)) \])))))))
+      (plot (store :filename (.getNextString gd))
+            :skip (int (store :skip (.getNextNumber gd)))
+            :separation (store :separation (.getNextString gd))
+            :title (store :title (.getNextString gd))
+            :x-label (store :x-label (.getNextString gd))
+            :y-label (store :y-label (.getNextString gd))
+            :background (eval (read-string (store :background (.getNextString gd))))
+            :series (eval (read-string (str \[ (store :series (.getText (.getTextArea1 gd))) \])))))))
 
 (choose)

@@ -1,7 +1,14 @@
 ; Albert Cardona 2011-11-29
-; Give a CSV file, load sets of 3 columns as x,y,r, where r is
-; painted a colored band around the line defined by x,y.
-; Look at the bottom for an example.
+; Given a CSV file, load sets of 3 columns as x,y,r, where r is
+; then painted as a colored band around the line defined by x,y.
+;
+; Look at the bottom for an example, commented out.
+;
+; The dialog fields are stored in ImageJ's preferences file
+; so that every subsequent instantiation will start with the last values.
+;
+; The plotting is done by using a DeviationRenderer of the JFreeChart library
+; and the saving as SVG uses the batik SVG library.
 
 
 (ns my.plot

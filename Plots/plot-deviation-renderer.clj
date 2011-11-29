@@ -5,18 +5,21 @@
 
 
 (ns my.plot
-  (:import [java.io BufferedReader InputStreamReader FileInputStream]
-           [java.awt Color Dimension BasicStroke]
-           [javax.swing JFrame]
-           [java.awt.event ActionListener]
-           [org.jfree.chart ChartFactory ChartPanel]
+  (:import [java.io BufferedReader InputStreamReader FileInputStream FileOutputStream OutputStreamWriter]
+           [java.awt Color Dimension Rectangle BasicStroke]
+           [javax.swing JFrame JMenuItem]
+           [java.awt.event ActionListener MouseAdapter]
+           [org.jfree.chart ChartFactory ChartPanel JFreeChart]
            [org.jfree.chart.axis NumberAxis]
            [org.jfree.chart.plot XYPlot PlotOrientation]
            [org.jfree.chart.renderer.xy DeviationRenderer]
            [org.jfree.data.xy XYDataset YIntervalSeries YIntervalSeriesCollection]
            [org.jfree.ui RectangleInsets]
            [fiji.util.gui GenericDialogPlus]
-           [ij Prefs]))
+           [ij Prefs]
+           [ij.io SaveDialog]
+           [org.apache.batik.dom GenericDOMImplementation]
+           [org.apache.batik.svggen SVGGraphics2D]))
 
 (defmacro read-lines
   [filename f]
@@ -114,18 +117,45 @@
       (.setAutoRangeIncludesZero false))
     chart))
 
+(defn save-as-SVG
+  [^JFreeChart chart
+   ^Rectangle bounds]
+  (let [sd (SaveDialog. "Save as SVG" nil ".svg")
+        filename (.getFileName sd)]
+    (when filename
+      (let [path (str (.getDirectory sd)
+                      (if (.endsWith filename ".svg") filename (str filename ".svg")))
+            ^SVGGraphics2D svg (SVGGraphics2D.
+                                 (.createDocument
+                                   (GenericDOMImplementation/getDOMImplementation)
+                                   nil "svg" nil))]
+        (.draw chart svg bounds)
+        (with-open [out (OutputStreamWriter.  (FileOutputStream. path) "UTF-8")]
+          (.stream svg out true)
+          (.flush out)
+          (println "SVG file saved at" path))))))
+
 (defn plot
   [filename & options]
-  (let [opts (apply assoc {} options)]
+  (let [opts (apply assoc {} options)
+        cp (ChartPanel.
+             (create-chart (apply create-dataset filename options)
+                           (:series opts)
+                           (apply #(Color. %1 %2 %3) (:background opts))
+                           (:title opts)
+                           (:x-label opts)
+                           (:y-label opts)))]
+    (.setPopupMenu cp
+                   (doto (.getPopupMenu cp)
+                     (.addSeparator)
+                     (.add (doto (JMenuItem. "Save as SVG")
+                             (.addActionListener
+                               (reify ActionListener
+                                 (actionPerformed [this event]
+                                   (save-as-SVG (.getChart cp) (.getBounds cp)))))))))
     (doto (JFrame. "Plot")
       (.setContentPane
-        (doto (ChartPanel.
-                (create-chart (apply create-dataset filename options)
-                              (:series opts)
-                              (apply #(Color. %1 %2 %3) (:background opts))
-                              (:title opts)
-                              (:x-label opts)
-                              (:y-label opts)))
+        (doto cp
           (.setPreferredSize (Dimension. 500 270))))
       (.pack)
       (.setVisible true))))

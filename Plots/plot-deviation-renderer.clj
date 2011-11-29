@@ -7,6 +7,7 @@
 (ns my.plot
   (:import [java.io BufferedReader InputStreamReader FileInputStream]
            [java.awt Color Dimension BasicStroke]
+           [javax.swing JFrame]
            [org.jfree.chart ChartFactory ChartPanel]
            [org.jfree.chart.axis NumberAxis]
            [org.jfree.chart.plot XYPlot PlotOrientation]
